@@ -216,7 +216,7 @@ jsPsych.plugins["music-free-tap-keyboard-reponse"] = (function() {
     };
 
     // function to handle responses by the subject
-    var after_response = function(info) {
+    function after_response(info) {
 
       response = info;
 
@@ -245,7 +245,7 @@ jsPsych.plugins["music-free-tap-keyboard-reponse"] = (function() {
     };
 
     // Embed the rest of the trial into a function so that we can attach to a button if desired
-    var start_audio = function(){
+    function start_audio(){
       // start audio
       if (context !== null) {
         startTime = context.currentTime;
