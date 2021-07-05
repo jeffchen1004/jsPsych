@@ -79,6 +79,7 @@ jsPsych.plugins["music-image"] = (function() {
       click_to_start: {
         type: jsPsych.plugins.parameterType.BOOL,
         pretty_name: 'Button to start sound',
+        default: true,
         description: 'If true, requires button click for trial to start.'
       }
     }

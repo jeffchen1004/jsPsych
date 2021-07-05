@@ -138,6 +138,7 @@ jsPsych.plugins["music-bleep-tones-keyboard-reponse"] = (function() {
       click_to_start: {
         type: jsPsych.plugins.parameterType.BOOL,
         pretty_name: 'Button to start sound',
+        default: true,
         description: 'If true, requires button click for trial to start.'
       },
 
@@ -464,7 +465,6 @@ jsPsych.plugins["music-bleep-tones-keyboard-reponse"] = (function() {
           allow_held_key: false
         });
       }
-
 
       //update the target times
       for(it=0;it<ntargets;it++){

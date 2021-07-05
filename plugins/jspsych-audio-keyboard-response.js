@@ -225,7 +225,7 @@ jsPsych.plugins["audio-keyboard-response"] = (function () {
           end_trial();
         }, trial.trial_duration);
       }
-
+  
       // clear the display
       display_element.innerHTML = trial.sound_text;
     }
