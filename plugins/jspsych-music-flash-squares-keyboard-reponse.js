@@ -399,7 +399,7 @@ jsPsych.plugins["music-flash-squares-keyboard-reponse"] = (function() {
     };
 
     // function to handle responses by the subject
-    var after_response = function(info) {
+    function after_response(info) {
 
       response = info;
 
