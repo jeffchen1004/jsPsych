@@ -224,8 +224,14 @@ jsPsych.plugins["music-image"] = (function() {
     } else {
       // Register callback for start sound button if we have one
       $('#start_button').on('click', function(ev){
-        ev.preventDefault();
-        start_audio();
+          ev.preventDefault();
+
+          // Fix for Firefox not blurring the button
+          if (document.activeElement == this){
+            jsPsych.getDisplayContainerElement().focus();
+          }
+
+          start_audio();
       })
     }
   };

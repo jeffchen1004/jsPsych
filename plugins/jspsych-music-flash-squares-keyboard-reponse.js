@@ -181,27 +181,6 @@ jsPsych.plugins["music-flash-squares-keyboard-reponse"] = (function() {
 
     // store response
     var run_events = []
-    var trial_data = {
-        time: null,
-        type: null,
-        stimulus: null,
-        key_press: null,
-        color: null,
-      };
-    var response_data = {
-        time: null,
-        type: null,
-        stimulus: null,
-        key_press: null,
-        color: null,
-      };
-    var music_data = {
-        time: null,
-        type: null,
-        stimulus: null,
-        key_press: null,
-        color: null
-    };
 
     var response = {
       rt: null,
@@ -285,9 +264,6 @@ jsPsych.plugins["music-flash-squares-keyboard-reponse"] = (function() {
         console.error(err)
       });
 
-    
-
-    ///////////////////////////////////////////////////
     function setupTrial() {
       // set up end event if trial needs it
       if (trial.trial_ends_after_audio) {
@@ -306,16 +282,20 @@ jsPsych.plugins["music-flash-squares-keyboard-reponse"] = (function() {
         // Register callback for start sound button if we have one
         $('#start_button').on('click', function(ev){
           ev.preventDefault();
+
+          // Fix for Firefox not blurring the button
+          if (document.activeElement == this){
+            jsPsych.getDisplayContainerElement().focus();
+          }
+
           start_audio();
         })
       }
-
     }
-    //////////////////////////////////////////////////////////////////////
 
-    // funciton that controls the presentation of visual stims
+    // function that controls the presentation of visual stims
     function toggle_fill(){
-      trial_data = {
+      var trial_data = {
         time: null,
         type: null,
         stimulus: trial.stimulus.replace(/^.*[\\\/]/, ''),
@@ -399,26 +379,14 @@ jsPsych.plugins["music-flash-squares-keyboard-reponse"] = (function() {
     };
 
     // function to handle responses by the subject
-    function after_response(info) {
-
-      response = info;
-
-      //append this info to current trial_data
-      response_data.stimulus = trial.stimulus.replace(/^.*[\\\/]/, '');
-      response_data.time = Math.round(response.rt); //* trial.timeConvert
-      response_data.key_press = response.key;
-      response_data.type = 'response';
-      response_data.color = null;
-     
-      run_events.push(response_data);
-
-      response_data = {
-        time: null,
-        type: null,
-        stimulus: null,
-        key_press: null,
-        color: null,
-      };
+    function after_response(response) {     
+      run_events.push({
+        'type': 'response',
+        'stimulus': trial.stimulus.replace(/^.*[\\\/]/, ''),
+        'time': Math.round(response.rt),
+        'key_press': response.key,
+        'color': null        
+      });
 
       if (trial.response_ends_trial) {
         end_trial();
@@ -442,27 +410,28 @@ jsPsych.plugins["music-flash-squares-keyboard-reponse"] = (function() {
         }, trial.trial_duration);
       }
 
-      music_data.stimulus = trial.stimulus.replace(/^.*[\\\/]/, '');
-      music_data.time = Math.round(context.currentTime); //* trial.timeConvert
-      music_data.key_press = null;
-      music_data.type = 'music_onset';
-      music_data.color = null;//inter-tap-interval
-     
-      run_events.push(music_data);
+      // Update our event array
+      run_events.push({
+        'stimulus': trial.stimulus.replace(/^.*[\\\/]/, ''),
+        'time': Math.round(context.currentTime),
+        'key_press': null,
+        'type': 'music_onset',
+        'color': null
+      });
 
       // start the response listener
       if(context !== null) {
-        var keyboardListener = jsPsych.pluginAPI.getKeyboardResponse({
+        jsPsych.pluginAPI.getKeyboardResponse({
           callback_function: after_response,
           valid_responses: trial.choices,
           rt_method: 'audio',
           persist: true,
-          allow_held_key: false,
+          allow_held_key: true,
           audio_context: context,
           audio_context_start_time: startTime
         });
       } else {
-        var keyboardListener = jsPsych.pluginAPI.getKeyboardResponse({
+        jsPsych.pluginAPI.getKeyboardResponse({
           callback_function: after_response,
           valid_responses: trial.choices,
           rt_method: 'performance',
