@@ -16,13 +16,6 @@ jsPsych.plugins["music-image-sequence"] = (function() {
 
   jsPsych.pluginAPI.registerPreload('music-image-sequence', 'stimulus', 'audio');
 
-  // Have to figure out how to dynamically handle the image preload
-  jsPsych.pluginAPI.registerPreload('music-image-sequence', 'image', 'image');
-  jsPsych.pluginAPI.registerPreload('music-image-sequence', 'imageLoc', 'image');
-  jsPsych.pluginAPI.registerPreload('music-image-sequence', 'imageJob', 'image');
-  jsPsych.pluginAPI.registerPreload('music-image-sequence', 'imageHob', 'image');
-  jsPsych.pluginAPI.registerPreload('music-image-sequence', 'imageRel', 'image');
-
   plugin.info = {
     name: 'music-image-sequence',
     description: '',
@@ -39,7 +32,7 @@ jsPsych.plugins["music-image-sequence"] = (function() {
         pretty_name: 'Frames',
         default: undefined,
         array: true,
-        description: 'The list of frames containg information to be displayed in sequence'
+        description: 'The list of frames containing information to be displayed in sequence'
       },
 
       choices: {
@@ -103,13 +96,8 @@ jsPsych.plugins["music-image-sequence"] = (function() {
     // store response
     var trial_data = {
         "sound": trial.stimulus.replace(/^.*[\\\/]/, ''),
-        "picture": trial.image.replace(/^.*[\\\/]/, ''),
+        "picture": trial.frames[0].image[0].replace(/^.*[\\\/]/, ''),
       };
-
-    var response = {
-      rt: null,
-      key: null
-    };
 
     // record webaudio context start time
     var startTime;
@@ -138,11 +126,18 @@ jsPsych.plugins["music-image-sequence"] = (function() {
         audio.addEventListener('ended', end_trial);
       }
 
+      // Preload all our images
+      for (var f=0; f < trial.frames.length; f++){
+        for (var i=0; i < trial.frames[f].image.length; i++){
+          html = '<div class="d-none"><img src="'+trial.frames[f].image[i]+'"></img></div>';
+          display_element.innerHTML = html;
+        }
+      }
+
       // show prompt if there is one
       if (trial.prompt !== null) {
         display_element.innerHTML = trial.prompt;
       }
-
 
       /////////////////////////////////
       // Either start the trial or wait for the user to click start
@@ -161,11 +156,7 @@ jsPsych.plugins["music-image-sequence"] = (function() {
           start_audio();
         })
       }
-
-
     }
-
-
 
     // function to end trial when it is time
     function end_trial() {
@@ -181,25 +172,9 @@ jsPsych.plugins["music-image-sequence"] = (function() {
       }
 
       audio.removeEventListener('ended', end_trial);
-      //audio.removeEventListener('ended', setup_keyboard_listener);
-
 
       // kill keyboard listeners
       jsPsych.pluginAPI.cancelAllKeyboardResponses();
-
-      /*
-      // gather the data to store for the trial
-      if(context !== null && response.rt !== null){
-        response.rt = Math.round(response.rt * 1000);
-      }
-      var trial_data = {
-        "rt": response.rt,
-        "stimulus": trial.stimulus,
-        "key_press": response.key
-      };
-      */
-      //add info for vtargets
-
 
       // clear the display
       display_element.innerHTML = '';
@@ -208,14 +183,59 @@ jsPsych.plugins["music-image-sequence"] = (function() {
       jsPsych.finishTrial(trial_data);
     };
 
-    // function to handle responses by the subject
-
-
     // Embed the rest of the trial into a function so that we can attach to a button if desired
     function start_audio(){
 
       var wait_time = 0;
-      var wait_int = 2000;
+      var wait_int = trial.frame_interval_ms;
+
+      // function to create a frame
+      var current_frame = 0;
+
+      function create_frame(){
+        var frame = trial.frames[current_frame];
+
+        var html = '<div class="row my-5">';
+
+        for (var img=0; img < frame.image.length; img++){
+          html += '<div class="col">'
+          html += '<img src="'+frame.image[img]+'" id="jspsych-music-image-sequence'+img.toString()+'" style="';
+
+          if(trial.stimulus_height !== null){
+            html += 'height:'+trial.stimulus_height+'px; '
+            if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
+              html += 'width: auto; ';
+            }
+          }
+
+          if(trial.stimulus_width !== null){
+            html += 'width:'+trial.stimulus_width+'px; '
+            if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
+              html += 'height: auto; ';
+            }
+          }
+
+          html +='"></img>';
+          html +='</div>';
+        }
+
+        html +='</div>';
+
+        // add prompt if it exists
+        if (frame.text){
+          html += frame.text;
+        }
+
+        // show the frame
+        display_element.innerHTML = html;
+
+        // update our frame and iteration indices
+        if (current_frame < trial.frames.length-1){
+          current_frame++;
+        } else {
+          current_frame = 0;
+        }
+      }  
 
       // start audio
       if (context !== null) {
@@ -232,728 +252,23 @@ jsPsych.plugins["music-image-sequence"] = (function() {
         }, trial.trial_duration);
       }
 
-      
-      /////////////////////////first time
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
+      // Schedule our timeline
 
-        html += '<div class="column">' +
-              '<img src="'+trial.imageLoc+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioLoc;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageJob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioJob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-       wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageHob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioHob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageRel+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioRel;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-      // full time through 4
-
-      /////////////////////////second time
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageLoc+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioLoc;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageJob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioJob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-       wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageHob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioHob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageRel+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioRel;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-      // full time through 4
-
-      /////////////////////////third time
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageLoc+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioLoc;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageJob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioJob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-       wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageHob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioHob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageRel+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioRel;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-      // full time through 4
-
-      /////////////////////////fourth time
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageLoc+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioLoc;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageJob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioJob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-       wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageHob+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioHob;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-
-      //need a loop here that displays next pic after X seconds
-      jsPsych.pluginAPI.setTimeout(function(){
-        //need to display to images side by side
-        // display stimulus
-        var html = '<div class="row"> <div class="column">' +
-              '<img src="'+trial.image+'" id="jspsych-music-image-sequence" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div>';
-
-        html += '<div class="column">' +
-              '<img src="'+trial.imageRel+'" id="jspsych-music-image-sequence2" style="';
-        if(trial.stimulus_height !== null){
-          html += 'height:'+trial.stimulus_height+'px; '
-          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-            html += 'width: auto; ';
-          }
-        }
-        if(trial.stimulus_width !== null){
-          html += 'width:'+trial.stimulus_width+'px; '
-          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-            html += 'height: auto; ';
-          }
-        }
-        html +='"></img> </div> </div>';
-
-          //show prompt if there is one
-        if (trial.biotext !== null) {
-          html += trial.bioRel;
-        }
-        display_element.innerHTML = html;
-      },startTime+wait_time);
-      wait_time = wait_time + wait_int;
-      // full time through 4
+      // Loop over iterations
+      for (var i=0; i<trial.num_sequence_iterations; i++){
+        // Loop over frames
+        for (var f=0; f<trial.frames.length; f++){
+          jsPsych.pluginAPI.setTimeout(create_frame, startTime+wait_time);
+          wait_time += wait_int;
+        }
+      }
 
       if(trial.displayQuestionsAtStart) {
               $("#questions").removeClass("d-none");
               $("#questions .form-actions input").attr({'disabled':true})
       
       }
-      
-
     }
-
   };
 
   return plugin;
