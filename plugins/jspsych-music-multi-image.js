@@ -1,6 +1,7 @@
 /**
  * jspsych-music-multi-image
  * Benjamin Kubit 09Sep2022
+ * Petr Janata 21Sep2022
  *
  * plugin for displaying multiple (4) image (+text) while auditory stim plays in the background
  *
@@ -14,10 +15,7 @@ jsPsych.plugins["music-multi-image"] = (function() {
   var plugin = {};
 
   jsPsych.pluginAPI.registerPreload('music-multi-image', 'stimulus', 'audio');
-  jsPsych.pluginAPI.registerPreload('music-multi-image', 'image', 'image');
-  jsPsych.pluginAPI.registerPreload('music-multi-image', 'faceFoil1', 'image');
-  jsPsych.pluginAPI.registerPreload('music-multi-image', 'faceFoil2', 'image');
-  jsPsych.pluginAPI.registerPreload('music-multi-image', 'faceFoil3', 'image');
+  jsPsych.pluginAPI.registerPreload('music-multi-image', 'images', 'image');
 
   plugin.info = {
     name: 'music-multi-image',
@@ -29,28 +27,11 @@ jsPsych.plugins["music-multi-image"] = (function() {
         default: undefined,
         description: 'The audio to be played.'
       },
-      image: {
-        type: jsPsych.plugins.parameterType.IMAGE,
+      images: {
+        type: jsPsych.plugins.parameterType.STRING,
         pretty_name: 'Image',
         default: undefined,
-        description: 'The image to display.'
-      },
-      faceFoil1: {
-        type: jsPsych.plugins.parameterType.IMAGE,
-        pretty_name: 'Foil 1',
-        default: undefined,
-        description: 'The image to display.'
-      },
-      faceFoil2: {
-        type: jsPsych.plugins.parameterType.IMAGE,
-        pretty_name: 'Foil 2',
-        default: undefined,
-        description: 'The image to display.'
-      },
-      faceFoil3: {
-        type: jsPsych.plugins.parameterType.IMAGE,
-        pretty_name: 'Foil 3',
-        default: undefined,
+        array: true,
         description: 'The image to display.'
       },
       choices: {
@@ -84,12 +65,12 @@ jsPsych.plugins["music-multi-image"] = (function() {
         default: false,
         description: 'If true, then the trial will end as soon as the audio file finishes playing.'
       },
-      biotext: {
-        type: jsPsych.plugins.parameterType.STRING,
-        pretty_name: 'Bio text',
-        default: false,
-        description: 'person bio for current trial.'
-      },
+      // biotext: {
+      //   type: jsPsych.plugins.parameterType.STRING,
+      //   pretty_name: 'Bio text',
+      //   default: false,
+      //   description: 'person bio for current trial.'
+      // },
       displayQuestionsAtStart: {
         type: jsPsych.plugins.parameterType.BOOL,
         pretty_name: 'questions at start',
@@ -111,7 +92,8 @@ jsPsych.plugins["music-multi-image"] = (function() {
     var context = jsPsych.pluginAPI.audioContext();
     var audio;
 
-    var facevalues = [trial.image,trial.faceFoil1,trial.faceFoil2,trial.faceFoil3];
+    // var facevalues = [trial.image,trial.faceFoil1,trial.faceFoil2,trial.faceFoil3];
+    var facevalues = trial.images;
     
     var numbers = [0, 1, 2, 3];
     var randomnum = shuffle(numbers);
@@ -120,12 +102,13 @@ jsPsych.plugins["music-multi-image"] = (function() {
     //var vtargresponses = []
     var trial_data = {
         "sound": trial.stimulus.replace(/^.*[\\\/]/, ''),
-        "picture": trial.image.replace(/^.*[\\\/]/, ''),
+        "picture": trial.images[0].replace(/^.*[\\\/]/, ''),
         "A": facevalues[randomnum[0]].replace(/^.*[\\\/]/, ''),
         "B": facevalues[randomnum[1]].replace(/^.*[\\\/]/, ''),
         "C": facevalues[randomnum[2]].replace(/^.*[\\\/]/, ''),
         "D": facevalues[randomnum[3]].replace(/^.*[\\\/]/, ''),
       };
+
     var response = {
       rt: null,
       key: null
@@ -158,6 +141,13 @@ jsPsych.plugins["music-multi-image"] = (function() {
         audio.addEventListener('ended', end_trial);
       }
 
+
+      // Preload all our images
+      for (var i=0; i < trial.images.length; i++){
+        html = '<div class="d-none"><img src="'+trial.images[i]+'"></img></div>';
+        display_element.innerHTML = html;
+      }
+
       // show prompt if there is one
       if (trial.prompt !== null) {
         display_element.innerHTML = trial.prompt;
@@ -181,8 +171,6 @@ jsPsych.plugins["music-multi-image"] = (function() {
           start_audio();
         })
       }
-
-
     }
 
     function shuffle(o) {
@@ -250,84 +238,48 @@ jsPsych.plugins["music-multi-image"] = (function() {
           end_trial();
         }, trial.trial_duration);
       }
-      // decide on order of images trial.image trial.faceFoil1 trial.faceFoil2 trial.faceFoil3
 
-      // display stimulus
-      var html = '<table class="img-table"> <tr> <th>A</th> <th>B</th> <th>C</th> <th>D</th> </tr> <tr>'+
-          '<td><img src="'+facevalues[randomnum[0]]+'"';
-      if(trial.stimulus_height !== null){
-        html += 'height:'+trial.stimulus_height+'px; '
-        if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-          html += 'width: auto; ';
-        }
-      }
-      if(trial.stimulus_width !== null){
-        html += 'width:'+trial.stimulus_width+'px; '
-        if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-          html += 'height: auto; ';
-        }
-      }
-      html += '> </img> </td>'
+      // display images in a row of a table
+      var html = '<table class="img-table"> <tr> <th>A</th> <th>B</th> <th>C</th> <th>D</th> </tr>';
 
-      html += '<td><img src="'+facevalues[randomnum[1]]+'"';
-      if(trial.stimulus_height !== null){
-        html += 'height:'+trial.stimulus_height+'px; '
-        if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-          html += 'width: auto; ';
-        }
-      }
-      if(trial.stimulus_width !== null){
-        html += 'width:'+trial.stimulus_width+'px; '
-        if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-          html += 'height: auto; ';
-        }
-      }
-      html += '> </img> </td>'
+      // Add image row
+      html += '<tr>';
 
-      html += '<td><img src="'+facevalues[randomnum[2]]+'"';
-      if(trial.stimulus_height !== null){
-        html += 'height:'+trial.stimulus_height+'px; '
-        if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-          html += 'width: auto; ';
-        }
-      }
-      if(trial.stimulus_width !== null){
-        html += 'width:'+trial.stimulus_width+'px; '
-        if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-          html += 'height: auto; ';
-        }
-      }
-      html += '> </img> </td>'
+      for (var img=0; img < trial.images.length; img++){
+        html += '<td>';
+        html += '<img src="'+facevalues[randomnum[img]]+'" style="';
 
-      html += '<td><img src="'+facevalues[randomnum[3]]+'"';
-      if(trial.stimulus_height !== null){
-        html += 'height:'+trial.stimulus_height+'px; '
-        if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
-          html += 'width: auto; ';
+        if(trial.stimulus_height !== null){
+          html += 'height:'+trial.stimulus_height+'px; '
+          if(trial.stimulus_width == null && trial.maintain_aspect_ratio){
+            html += 'width: auto; ';
+          }
         }
-      }
-      if(trial.stimulus_width !== null){
-        html += 'width:'+trial.stimulus_width+'px; '
-        if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
-          html += 'height: auto; ';
+        if(trial.stimulus_width !== null){
+          html += 'width:'+trial.stimulus_width+'px; '
+          if(trial.stimulus_height == null && trial.maintain_aspect_ratio){
+            html += 'height: auto; ';
+          }
         }
+        html += '"></img>';
+        html += '</td>';
       }
-      html += '> </img> </td> </tr> </table>'
 
+      html += '</tr>';
+      html += '</table>';
+          
       //show prompt if there is one
-      if (trial.biotext !== null) {
-        html += trial.biotext;
-      }
+      // if (trial.prompt !== null) {
+      //   html += trial.prompt;
+      // }
       display_element.innerHTML = html;
 
       if(trial.displayQuestionsAtStart) {
         $("#questions").removeClass("d-none");
         $("#questions .form-actions input").attr({'disabled':true})
       }
-      
-
+  
     }
-
   };
 
   return plugin;
