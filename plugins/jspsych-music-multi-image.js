@@ -3,12 +3,11 @@
  * Benjamin Kubit 09Sep2022
  * Petr Janata 21Sep2022
  *
- * plugin for displaying multiple (4) image (+text) while auditory stim plays in the background
+ * plugin for displaying multiple images, and any associated text, 
+ * while an auditory stimulus plays in the background
  *
- * 
  *
  **/
-
 
 jsPsych.plugins["music-multi-image"] = (function() {
 
@@ -65,12 +64,6 @@ jsPsych.plugins["music-multi-image"] = (function() {
         default: false,
         description: 'If true, then the trial will end as soon as the audio file finishes playing.'
       },
-      // biotext: {
-      //   type: jsPsych.plugins.parameterType.STRING,
-      //   pretty_name: 'Bio text',
-      //   default: false,
-      //   description: 'person bio for current trial.'
-      // },
       displayQuestionsAtStart: {
         type: jsPsych.plugins.parameterType.BOOL,
         pretty_name: 'questions at start',
@@ -92,14 +85,11 @@ jsPsych.plugins["music-multi-image"] = (function() {
     var context = jsPsych.pluginAPI.audioContext();
     var audio;
 
-    // var facevalues = [trial.image,trial.faceFoil1,trial.faceFoil2,trial.faceFoil3];
     var facevalues = trial.images;
     
     var numbers = [0, 1, 2, 3];
     var randomnum = shuffle(numbers);
 
-    // store response
-    //var vtargresponses = []
     var trial_data = {
         "sound": trial.stimulus.replace(/^.*[\\\/]/, ''),
         "picture": trial.images[0].replace(/^.*[\\\/]/, ''),
@@ -192,25 +182,9 @@ jsPsych.plugins["music-multi-image"] = (function() {
       }
 
       audio.removeEventListener('ended', end_trial);
-      //audio.removeEventListener('ended', setup_keyboard_listener);
-
 
       // kill keyboard listeners
       jsPsych.pluginAPI.cancelAllKeyboardResponses();
-
-      /*
-      // gather the data to store for the trial
-      if(context !== null && response.rt !== null){
-        response.rt = Math.round(response.rt * 1000);
-      }
-      var trial_data = {
-        "rt": response.rt,
-        "stimulus": trial.stimulus,
-        "key_press": response.key
-      };
-      */
-      //add info for vtargets
-
 
       // clear the display
       display_element.innerHTML = '';
@@ -218,9 +192,6 @@ jsPsych.plugins["music-multi-image"] = (function() {
       // move on to the next trial
       jsPsych.finishTrial(trial_data);
     };
-
-    // function to handle responses by the subject
-
 
     // Embed the rest of the trial into a function so that we can attach to a button if desired
     function start_audio(){
@@ -268,10 +239,6 @@ jsPsych.plugins["music-multi-image"] = (function() {
       html += '</tr>';
       html += '</table>';
           
-      //show prompt if there is one
-      // if (trial.prompt !== null) {
-      //   html += trial.prompt;
-      // }
       display_element.innerHTML = html;
 
       if(trial.displayQuestionsAtStart) {

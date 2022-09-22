@@ -1,5 +1,5 @@
 /**
- * jspsych-music-image-sequenceuence
+ * jspsych-music-image-sequence
  * Petr Janata 18Sep2022
  *
  * plugin for presenting multiple frames of images (and accompanying text)
