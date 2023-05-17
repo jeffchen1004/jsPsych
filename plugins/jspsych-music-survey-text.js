@@ -22,6 +22,12 @@ jsPsych.plugins["music-survey-text"] = (function() {
         default: null,
         description: 'The audio to be played.'
       },
+      conditions: {
+        type: jsPsych.plugins.parameterType.OBJECT,
+        pretty_name: 'Trial Conditions',
+        default: undefined,
+        description: 'The levels of the different factors used for this trial'
+      },
       trial_duration: {
         type: jsPsych.plugins.parameterType.INT,
         pretty_name: 'Trial duration',
@@ -52,18 +58,6 @@ jsPsych.plugins["music-survey-text"] = (function() {
         pretty_name: 'Questions',
         default: undefined,
         nested: {
-          // prompt: {
-          //   type: jsPsych.plugins.parameterType.STRING,
-          //   pretty_name: 'Prompt',
-          //   default: undefined,
-          //   description: 'Prompt for the subject to response'
-          // },
-          // placeholder: {
-          //   type: jsPsych.plugins.parameterType.STRING,
-          //   pretty_name: 'Placeholder',
-          //   default: "",
-          //   description: 'Placeholder text in the textfield.'
-          // },
           rows: {
             type: jsPsych.plugins.parameterType.INT,
             pretty_name: 'Rows',
@@ -173,6 +167,9 @@ jsPsych.plugins["music-survey-text"] = (function() {
 
     ///////////////////////////////////////////////////
     function setup_trial() {
+      // Add our trial conditions to our run event list
+      run_events.push(trial.conditions);
+
       // set up the survey form
       construct_survey_form();
 
@@ -273,7 +270,7 @@ jsPsych.plugins["music-survey-text"] = (function() {
       html += '<div id="question-prompt" class="jspsych-survey-text">'+trial.question_prompt_template+'</div>';
 
       // Input field
-      html += '<input type="text" id="survey-text-input" class="text-center" name="#jspsych-survey-text-response" data-name="" size="6" autofocus required placeholder=""></input>';
+      html += '<input type="text" id="survey-text-input" class="text-center jspsych-survey-text" name="#jspsych-survey-text-response" data-name="" size="6" autofocus required placeholder=""></input>';
 
       html += '</div>';
 
