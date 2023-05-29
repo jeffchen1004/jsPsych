@@ -203,6 +203,8 @@ jsPsych.plugins["music-survey-text"] = (function() {
 
           if (trial.stimulus) start_audio();
 
+          $("#preamble-text").removeClass("d-none");
+
           next_action();
 
         })
