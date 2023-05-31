@@ -170,6 +170,9 @@ jsPsych.plugins["music-survey-text"] = (function() {
       // Add our trial conditions to our run event list
       run_events.push(trial.conditions);
 
+      // Add our trial duration
+      run_events.push({trial_duration:trial.trial_duration})
+
       // set up the survey form
       construct_survey_form();
 
